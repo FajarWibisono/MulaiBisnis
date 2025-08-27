@@ -137,8 +137,8 @@ def get_llm():
     """Menginisialisasi dan meng-cache LLM"""
     return ChatGroq(
         temperature=0.72,
-        model_name="gemma2-9b-it",
-        max_tokens=2048
+        model_name="openai/gpt-oss-120b",
+        max_tokens=4096
     )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -223,5 +223,6 @@ st.markdown(
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
 )
+
 
 
