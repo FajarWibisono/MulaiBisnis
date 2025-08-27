@@ -187,7 +187,7 @@ def get_llm(temperature=0.72):
     return ChatGroq(
         temperature=temperature,
         model_name="openai/gpt-oss-120b",
-        max_tokens=4096
+        max_tokens=3006
     )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -280,6 +280,7 @@ st.markdown(
     - **Data TIDAK REAL-TIME**, karena tidak terkoneksi dengan data terbaru di internet
     """
 )
+
 
 
 
