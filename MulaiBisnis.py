@@ -98,7 +98,7 @@ def analyze_business_proposal(pdf_file):
         1. **Ringkasan Proposal (9-18 kalimat)**: Berikan gambaran komprehensif tentang ide bisnis, model bisnis, target pasar, dan rencana implementasi.
         2. **Potensi Keuntungan**: Sebutkan hal-hal yang membuat proposal ini menarik atau potensial menguntungkan.
         3. **Risiko atau Hal yang Perlu Diwaspadai**: Sebutkan risiko utama atau kelemahan dalam proposal ini.
-        4. **Pertanyaan Investor (3-7 pertanyaan)**: Buat daftar pertanyaan penting yang harus diajukan oleh investor kepada pengusul bisnis.
+        4. **Pertanyaan Investor (3-7 pertanyaan)**: Buat daftar pertanyaan penting yang harus diajukan oleh investor kepada pengusul bisnis untuk memastikan dan meimilkan risiko yang mungkin tersembunyi.
 
         Proposal Bisnis:
         {full_text}
@@ -223,6 +223,7 @@ st.markdown(
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
 )
+
 
 
 
