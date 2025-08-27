@@ -1,24 +1,7 @@
-﻿# TD_WIRA.py
+# TD_WIRA.py
 import streamlit as st
 import os
 from langchain_groq import ChatGroq
-
-# Import dengan fallback untuk menghindari ModuleNotFoundError
-try:
-    from langchain_huggingface import HuggingFaceEmbeddings
-    EMBEDDINGS_AVAILABLE = True
-except ImportError:
-    try:
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        EMBEDDINGS_AVAILABLE = True
-    except ImportError:
-        EMBEDDINGS_AVAILABLE = False
-        st.error("❌ Tidak dapat mengimpor HuggingFaceEmbeddings. Pastikan 'langchain-huggingface' terinstal.")
-
-from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 import tempfile
 
@@ -62,29 +45,19 @@ st.markdown(
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. STATE DAN INISIALISASI
 # ─────────────────────────────────────────────────────────────────────────────
-if 'chain' not in st.session_state:
-    st.session_state.chain = None
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'proposal_analysis' not in st.session_state:
     st.session_state.proposal_analysis = None
 
-# Cek ketersediaan embeddings
-if not EMBEDDINGS_AVAILABLE:
-    st.markdown(
-        '<div class="error-box">⚠️ <strong>Error Kritis:</strong> Package <code>langchain-huggingface</code> tidak ditemukan. Aplikasi tidak dapat berjalan. Silakan pastikan semua dependencies terinstal dengan benar.</div>',
-        unsafe_allow_html=True
-    )
-    st.stop()
-
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. PROMPT UNTUK MENJAMIN BAHASA INDONESIA
 # ─────────────────────────────────────────────────────────────────────────────
 PROMPT_INDONESIA = """\
-Anda adalah seorang Ahli ENTREPRENEURSHIP yang KREATIF dan berpengalaman lebih dari 25 tahun . Gunakan informasi konteks berikut untuk menjawab berbagai pertanyaan pengguna dalam bahasa Indonesia yang baik dan terstruktur.
+Anda adalah seorang Ahli ENTREPRENEURSHIP yang KREATIF dan berpengalaman lebih dari 25 tahun. 
+Jawab pertanyaan pengguna dalam bahasa Indonesia yang baik dan terstruktur.
 Selalu berikan jawaban terbaik yang dapat kamu berikan dengan tone memotivasi dengan gaya santai dan informal tapi tetap santun.
 
-Konteks: {context}
 Riwayat Chat: {chat_history}
 Pertanyaan: {question}
 
@@ -92,7 +65,7 @@ Jawaban:
 """
 
 INDO_PROMPT_TEMPLATE = PromptTemplate(
-    input_variables=["context", "chat_history", "question"],
+    input_variables=["chat_history", "question"],
     template=PROMPT_INDONESIA
 )
 
@@ -111,6 +84,7 @@ def analyze_business_proposal(pdf_file):
             tmp_file_path = tmp_file.name
 
         # Load PDF
+        from langchain_community.document_loaders import PyPDFLoader
         loader = PyPDFLoader(tmp_file_path)
         documents = loader.load()
 
@@ -134,9 +108,9 @@ def analyze_business_proposal(pdf_file):
 
         # Inisialisasi LLM
         llm = ChatGroq(
-            temperature=0.72,
-            model_name="openai/gpt-oss-20b",
-            max_tokens=4096
+            temperature=0.3,
+            model_name="gemma2-9b-it",
+            max_tokens=2048
         )
 
         # Dapatkan jawaban
@@ -156,83 +130,16 @@ def analyze_business_proposal(pdf_file):
         return f"Terjadi kesalahan saat menganalisis proposal: {str(e)}"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. FUNGSI INISIALISASI RAG DENGAN OPTIMASI
+# 5. INISIALISASI LLM
 # ─────────────────────────────────────────────────────────────────────────────
-@st.cache_resource(ttl=3600, show_spinner=False)  # Cache selama 1 jam
-def initialize_rag():
-    """
-    Memuat dokumen PDF dari folder 'documents', memecah menjadi chunk,
-    membuat FAISS vector store, dan membentuk ConversationalRetrievalChain.
-    Menggunakan persistence untuk mempercepat startup.
-    """
-    try:
-        # Path untuk menyimpan vector store
-        vectorstore_path = "faiss_index"
-        
-        # Cek apakah vector store sudah ada
-        if os.path.exists(vectorstore_path):
-            # Load vector store yang sudah ada
-            embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-                model_kwargs={'device': 'cpu'}  
-            )
-            vectorstore = FAISS.load_local(vectorstore_path, embeddings, allow_dangerous_deserialization=True)
-            st.info("✅ Vector store dimuat dari cache disk")
-        else:
-            # Tampilkan info startup
-            startup_placeholder = st.empty()
-            startup_placeholder.markdown(
-                '<div class="startup-info">🚀 Pertama kali startup: Membuat vector store dari dokumen... Ini mungkin memakan waktu beberapa menit.</div>', 
-                unsafe_allow_html=True
-            )
-            
-            # 1. Load Dokumen PDF
-            loader = DirectoryLoader("documents", glob="**/*.pdf", loader_cls=PyPDFLoader)
-            documents = loader.load()
-
-            # 2. Split Dokumen (dioptimasi)
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=150)
-            texts = text_splitter.split_documents(documents)
-
-            # 3. Embedding (model yang lebih cepat)
-            embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-                model_kwargs={'device': 'cpu'}  
-            )
-
-            # 4. Membuat Vector Store FAISS
-            vectorstore = FAISS.from_documents(texts, embeddings)
-            
-            # 5. Simpan vector store ke disk
-            vectorstore.save_local(vectorstore_path)
-            
-            # Hapus info startup
-            startup_placeholder.empty()
-            st.success("✅ Vector store berhasil dibuat dan disimpan!")
-
-        # 6. Menginisialisasi LLM (ChatGroq)
-        llm = ChatGroq(
-            temperature=0.45,
-            model_name="gemma2-9b-it",
-            max_tokens=2048
-        )
-
-        # 7. Membuat Chain (tanpa memory deprecated)
-        chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=vectorstore.as_retriever(search_kwargs={'k': 3}),
-            return_source_documents=True,
-            combine_docs_chain_kwargs={
-                'prompt': INDO_PROMPT_TEMPLATE,
-                'output_key': 'answer'
-            }
-        )
-
-        return chain
-
-    except Exception as e:
-        st.error(f"Error during initialization: {str(e)}")
-        return None
+@st.cache_resource(show_spinner=False)
+def get_llm():
+    """Menginisialisasi dan meng-cache LLM"""
+    return ChatGroq(
+        temperature=0.45,
+        model_name="gemma2-9b-it",
+        max_tokens=2048
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. SIDEBAR UNTUK UPLOAD DAN ANALISIS PROPOSAL
@@ -256,61 +163,56 @@ if st.session_state.proposal_analysis:
     st.markdown("---")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. INISIALISASI SISTEM
+# 8. ANTARMUKA CHAT
 # ─────────────────────────────────────────────────────────────────────────────
-if st.session_state.chain is None and EMBEDDINGS_AVAILABLE:
-    with st.spinner("Memuat sistem..."):
-        st.session_state.chain = initialize_rag()
+
+st.subheader("💬 Diskusi Kewirausahaan")
+
+# 8.1 Tampilkan riwayat chat
+for message in st.session_state.chat_history:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# 8.2 Chat Input
+prompt = st.chat_input("✍️tuliskan pertanyaan Anda tentang KEWIRAUSAHAAN disini")
+if prompt:
+    # Tambahkan pertanyaan user ke riwayat chat
+    st.session_state.chat_history.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
+
+    # 8.3 Generate Response
+    with st.chat_message("assistant"):
+        with st.spinner("Mencari jawaban..."):
+            try:
+                # Format riwayat chat
+                chat_history_str = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history[:-1]])
+                
+                # Dapatkan LLM
+                llm = get_llm()
+                
+                # Buat prompt dengan riwayat
+                formatted_prompt = INDO_PROMPT_TEMPLATE.format(
+                    chat_history=chat_history_str,
+                    question=prompt
+                )
+                
+                # Dapatkan jawaban
+                response = llm.invoke(formatted_prompt)
+                answer = response.content
+                
+                st.write(answer)
+                
+                # Tambahkan ke riwayat
+                st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                
+            except Exception as e:
+                error_msg = f"Error generating response: {str(e)}"
+                st.error(error_msg)
+                st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. ANTARMUKA CHAT DENGAN PENGELOLAAN RIWAYAT MANUAL
-# ─────────────────────────────────────────────────────────────────────────────
-if st.session_state.chain and EMBEDDINGS_AVAILABLE:
-    # 9.1 Tampilkan riwayat chat
-    for message in st.session_state.chat_history:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
-
-    # 9.2 Chat Input
-    prompt = st.chat_input("✍️tuliskan pertanyaan Anda tentang KEWIRAUSAHAAN disini")
-    if prompt:
-        # Tambahkan pertanyaan user ke riwayat chat
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.write(prompt)
-
-        # 9.3 Generate Response
-        with st.chat_message("assistant"):
-            with st.spinner("Mencari jawaban..."):
-                try:
-                    # Format riwayat chat untuk chain
-                    chat_history_formatted = []
-                    for msg in st.session_state.chat_history[:-1]:  # Exclude current question
-                        if msg["role"] == "user":
-                            chat_history_formatted.append(("Human", msg["content"]))
-                        else:
-                            chat_history_formatted.append(("AI", msg["content"]))
-                    
-                    # Panggil chain dengan riwayat chat
-                    result = st.session_state.chain({
-                        "question": prompt,
-                        "chat_history": chat_history_formatted
-                    })
-                    
-                    # Ambil jawaban
-                    answer = result.get('answer', '')
-                    st.write(answer)
-                    
-                    # Tambahkan ke riwayat
-                    st.session_state.chat_history.append({"role": "assistant", "content": answer})
-                    
-                except Exception as e:
-                    error_msg = f"Error generating response: {str(e)}"
-                    st.error(error_msg)
-                    st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 10. FOOTER & DISCLAIMER
+# 9. FOOTER & DISCLAIMER
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown(
     """
@@ -320,5 +222,4 @@ st.markdown(
     - Ketik: LANJUTKAN JAWABANMU untuk kemungkinan mendapatkan jawaban yang lebih baik dan utuh.
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
-
 )
