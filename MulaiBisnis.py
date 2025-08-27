@@ -207,7 +207,7 @@ with st.sidebar:
 # 8. TAMPILKAN HASIL ANALISIS PROPOSAL (JIKA ADA)
 # ─────────────────────────────────────────────────────────────────────────────
 if st.session_state.proposal_analysis:
-    st.subheader("🔍 Hasil Analisis Proposal Bisnis oleh Mentor Ahli")
+    st.subheader("🔍 Hasil Analisis Proposal Bisnis oleh TEDI")
     st.markdown(f'<div class="analysis-box">{st.session_state.proposal_analysis}</div>', unsafe_allow_html=True)
     st.markdown("---")
 
@@ -215,7 +215,7 @@ if st.session_state.proposal_analysis:
 # 9. ANTARMUKA CHAT - MENTOR INTERAKTIF
 # ─────────────────────────────────────────────────────────────────────────────
 
-st.subheader("💬 Diskusi Interaktif dengan Mentor Kewirausahaan")
+st.subheader("💬 Diskusi Interaktif dengan **TEMAN DISKUSI Kewirausahaan**")
 st.markdown("*Ajukan pertanyaan spesifik tentang ide bisnis, strategi, atau tantangan yang Anda hadapi*")
 
 # 9.1 Tampilkan riwayat chat
@@ -233,7 +233,7 @@ if prompt:
 
     # 9.3 Generate Response
     with st.chat_message("assistant"):
-        with st.spinner("🧠 Mentor sedang memikirkan jawaban terbaik untuk Anda..."):
+        with st.spinner("🧠 TEDIWIRA sedang memikirkan jawaban terbaik untuk Anda..."):
             try:
                 # Format riwayat chat
                 chat_history_str = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history[:-1]])
@@ -280,5 +280,6 @@ st.markdown(
     - **Data tidak REAL-TIME, karena tidak terkoneksi dengan data terbaru di internet**
     """
 )
+
 
 
