@@ -277,9 +277,10 @@ st.markdown(
     - Sistem ini menggunakan AI sebagai alat bantu mentoring
     - Selalu verifikasi informasi penting dengan sumber terpercaya
     - Keputusan bisnis akhir tetap menjadi tanggung jawab Anda
-    - **Data tidak REAL-TIME, karena tidak terkoneksi dengan data terbaru di internet**
+    - **Data TIDAK REAL-TIME**, karena tidak terkoneksi dengan data terbaru di internet
     """
 )
+
 
 
 
