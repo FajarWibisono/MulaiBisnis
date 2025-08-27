@@ -95,10 +95,10 @@ def analyze_business_proposal(pdf_file):
         analysis_prompt = f"""
         Anda adalah seorang ahli bisnis dan investor profesional. Analisis proposal bisnis berikut dan berikan:
 
-        1. **Ringkasan Proposal (5-9 kalimat)**: Berikan gambaran komprehensif tentang ide bisnis, model bisnis, target pasar, dan rencana implementasi.
+        1. **Ringkasan Proposal (9-18 kalimat)**: Berikan gambaran komprehensif tentang ide bisnis, model bisnis, target pasar, dan rencana implementasi.
         2. **Potensi Keuntungan**: Sebutkan hal-hal yang membuat proposal ini menarik atau potensial menguntungkan.
         3. **Risiko atau Hal yang Perlu Diwaspadai**: Sebutkan risiko utama atau kelemahan dalam proposal ini.
-        4. **Pertanyaan Investor (3-5 pertanyaan)**: Buat daftar pertanyaan penting yang harus diajukan oleh investor kepada pengusul bisnis.
+        4. **Pertanyaan Investor (3-7 pertanyaan)**: Buat daftar pertanyaan penting yang harus diajukan oleh investor kepada pengusul bisnis.
 
         Proposal Bisnis:
         {full_text}
@@ -109,8 +109,8 @@ def analyze_business_proposal(pdf_file):
         # Inisialisasi LLM
         llm = ChatGroq(
             temperature=0.3,
-            model_name="gemma2-9b-it",
-            max_tokens=2048
+            model_name="openai/gpt-oss-120b",
+            max_tokens=4096
         )
 
         # Dapatkan jawaban
@@ -223,3 +223,4 @@ st.markdown(
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
 )
+
