@@ -155,7 +155,7 @@ def analyze_business_proposal(pdf_file):
         # Inisialisasi LLM
         llm = ChatGroq(
             temperature=0.72,
-            model_name="openai/gpt-oss-120b",
+            model_name="meta-llama/llama-4-scout-17b-16e-instruct",
             max_tokens=4096 # Meningkatkan token untuk analisis komprehensif
         )
 
@@ -280,6 +280,7 @@ st.markdown(
     - **Data TIDAK REAL-TIME**, karena tidak terkoneksi dengan data terbaru di internet
     """
 )
+
 
 
 
