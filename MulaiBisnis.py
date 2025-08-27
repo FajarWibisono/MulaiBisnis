@@ -154,9 +154,9 @@ def analyze_business_proposal(pdf_file):
 
         # Inisialisasi LLM
         llm = ChatGroq(
-            temperature=0.3,
-            model_name="gemma2-9b-it",
-            max_tokens=3000  # Meningkatkan token untuk analisis komprehensif
+            temperature=0.72,
+            model_name="openai/gpt-oss-120b",
+            max_tokens=4096 # Meningkatkan token untuk analisis komprehensif
         )
 
         # Buat prompt analisis
@@ -182,12 +182,12 @@ def analyze_business_proposal(pdf_file):
 # 6. INISIALISASI LLM
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
-def get_llm(temperature=0.45):
+def get_llm(temperature=0.72):
     """Menginisialisasi dan meng-cache LLM"""
     return ChatGroq(
         temperature=temperature,
-        model_name="gemma2-9b-it",
-        max_tokens=2048
+        model_name="openai/gpt-oss-120b",
+        max_tokens=4096
     )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -280,4 +280,5 @@ st.markdown(
     - **Data tidak REAL-TIME, karena tidak terkoneksi dengan data terbaru di internet**
     """
 )
+
 
