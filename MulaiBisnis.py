@@ -134,9 +134,9 @@ def analyze_business_proposal(pdf_file):
 
         # Inisialisasi LLM
         llm = ChatGroq(
-            temperature=0.3,
-            model_name="gemma2-9b-it",
-            max_tokens=2048
+            temperature=0.72,
+            model_name="openai/gpt-oss-20b",
+            max_tokens=4096
         )
 
         # Dapatkan jawaban
@@ -320,4 +320,5 @@ st.markdown(
     - Ketik: LANJUTKAN JAWABANMU untuk kemungkinan mendapatkan jawaban yang lebih baik dan utuh.
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
+
 )
