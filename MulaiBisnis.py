@@ -136,7 +136,7 @@ def analyze_business_proposal(pdf_file):
 def get_llm():
     """Menginisialisasi dan meng-cache LLM"""
     return ChatGroq(
-        temperature=0.45,
+        temperature=0.72,
         model_name="gemma2-9b-it",
         max_tokens=2048
     )
@@ -223,4 +223,5 @@ st.markdown(
     - Mohon verifikasi informasi penting dengan sumber terpercaya.
     """
 )
+
 
