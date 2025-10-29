@@ -13,8 +13,8 @@ import tempfile
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
 st.set_page_config(
-    page_title="TEDIWIRA",
-    page_icon="📓",
+    page_title="WIRAUSAHA",
+    page_icon="💰",
     layout="wide"
 )
 
@@ -34,11 +34,11 @@ st.markdown(
 )
 
 # Judul Aplikasi
-st.title("📓TEMAN DISKUSI KEWIRAUSAHAAN")
+st.title("💰TEMAN DISKUSI KEWIRAUSAHAAN")
 st.markdown(
     """
     ### Selamat Datang di Asisten Pengetahuan Tentang Kewirausahaan
-    **Chat Bot ini akan membantu Anda memahami lebih dalam tentang dunia KEWIRAUSAHAAN** dan berbagai hal-hal yang perlu di perhatikan baik pada masa persiapan, pelaksanaan, pengembangan,dan bahkan exit strategy. **Pastikanlah Anda memiliki koneksi internet yang baik dan stabil.**
+    **Chat Bot ini akan membantu Anda memahami lebih dalam tentang dunia KEWIRAUSAHAAN** dan berbagai hal-hal yang perlu di perhatikan baik pada masa persiapan, pelaksanaan, pengembangan,dan bahkan exit strategy.Apps ini juga dapat membantu anda untuk **MERIEW PROPOSAL TAWARAN BISNIS atua KERJASAMA yang datang pada ANDA**.**Pastikanlah Anda memiliki koneksi internet yang baik dan stabil.**
     """
 )
 
@@ -280,6 +280,7 @@ st.markdown(
     - **Data TIDAK REAL-TIME**, karena tidak terkoneksi dengan data terbaru di internet
     """
 )
+
 
 
 
