@@ -33,6 +33,7 @@ TEMP_PROPOSAL = 0.35
 MAX_PROPOSAL_CHARS = 30_000      # ± 8-10 ribu token
 MAX_HISTORY_MESSAGES = 12        # hanya pesan terakhir yang dikirim ke LLM
 MAX_HISTORY_CHARS = 12_000
+MAX_PROPOSAL_CONTEXT_CHARS = int(os.getenv("MAX_PROPOSAL_CONTEXT_CHARS", "4000"))
 
 PROMPT_VERSION = "v3"            # ubah jika prompt di bawah diubah (cache buster)
 
@@ -88,6 +89,7 @@ DEFAULT_STATE = {
     "proposal_chars": 0,
     "proposal_truncated": False,
     "analysis_at": None,
+    "include_proposal_context": True,  # kirim hasil analisis proposal ke konteks chat
     "analysis_nonce": 0,         # dinaikkan saat user minta analisis ulang
     "proposal_version": 0,       # dinaikkan saat lampiran dihapus (reset uploader)
     "last_failed_prompt": None,
@@ -122,6 +124,9 @@ INSTRUKSI:
 4. Tawarkan perspektif yang mungkin belum dipertimbangkan user
 5. Akhiri dengan actionable insights atau pertanyaan untuk refleksi
 
+KONTEKS PROPOSAL BISNIS PENGGUNA (hasil analisis Anda sebelumnya, gunakan sebagai acuan bila pertanyaan berkaitan dengan proposal):
+{proposal_context}
+
 Riwayat Chat:
 {chat_history}
 
@@ -130,7 +135,7 @@ Pertanyaan: {question}
 Jawaban (sebagai mentor ahli):"""
 
 INDO_PROMPT_TEMPLATE = PromptTemplate(
-    input_variables=["chat_history", "question"],
+    input_variables=["proposal_context", "chat_history", "question"],
     template=PROMPT_MENTOR_AHLI,
 )
 
@@ -262,11 +267,38 @@ def _token_stream(llm_stream):
             yield text if isinstance(text, str) else str(text)
 
 
+def build_proposal_context() -> str:
+    """
+    Ringkas hasil analisis proposal untuk dijadikan konteks chat.
+    Dibatasi agar prompt tidak membengkak dan biaya token tetap terkendali.
+    """
+    analysis = st.session_state.proposal_analysis
+    if not st.session_state.include_proposal_context or not analysis:
+        return "(tidak ada proposal bisnis yang dilampirkan. Jawab sebagai mentor umum.)"
+
+    proposal = st.session_state.proposal_file
+    header = (
+        f"File: {proposal['name']} ({st.session_state.proposal_pages or '?'} halaman)"
+        if proposal
+        else ""
+    )
+
+    analysis = analysis.strip()
+    if len(analysis) > MAX_PROPOSAL_CONTEXT_CHARS:
+        analysis = (
+            analysis[:MAX_PROPOSAL_CONTEXT_CHARS].rstrip()
+            + "\n[... ringkasan analisis dipotong karena batas konteks ...]"
+        )
+
+    return "\n".join(part for part in (header, analysis) if part)
+
+
 def generate_answer(question: str) -> str:
     """Panggil LLM dan stream jawabannya ke UI. Mengembalikan teks jawaban."""
     history_str = build_chat_history_str(st.session_state.chat_history[:-1])
     llm = get_llm(MODEL_CHAT, TEMP_CHAT, MAX_TOKENS_CHAT)
     formatted_prompt = INDO_PROMPT_TEMPLATE.format(
+        proposal_context=build_proposal_context(),
         chat_history=history_str or "(belum ada riwayat)",
         question=question,
     )
@@ -418,6 +450,24 @@ with st.sidebar:
             use_container_width=True,
         )
 
+    st.checkbox(
+        "🧠 Sertakan analisis proposal di konteks chat",
+        key="include_proposal_context",
+        disabled=not st.session_state.proposal_analysis,
+        help=(
+            "Jika aktif, mentor mengingat hasil analisis proposal saat menjawab "
+            "pertanyaan lanjutan. Matikan untuk menghemat token."
+        ),
+    )
+    if st.session_state.proposal_analysis and st.session_state.include_proposal_context:
+        context_chars = min(
+            len(st.session_state.proposal_analysis.strip()), MAX_PROPOSAL_CONTEXT_CHARS
+        )
+        st.caption(
+            f"Konteks aktif: ±{context_chars:,} karakter analisis dikirim "
+            "bersama setiap pertanyaan."
+        )
+
     col_refresh, col_reset = st.columns(2)
     with col_refresh:
         refresh_all = st.button(
@@ -505,6 +555,11 @@ with chat_left:
     st.markdown(
         "*Ajukan pertanyaan spesifik tentang ide bisnis, strategi, atau tantangan yang Anda hadapi*"
     )
+    if st.session_state.proposal_analysis and st.session_state.include_proposal_context:
+        st.caption(
+            "🧠 Konteks aktif: jawaban mentor mempertimbangkan hasil analisis proposal "
+            "yang Anda lampirkan."
+        )
 with chat_mid:
     st.write("")
     if st.button("🔄 Refresh tampilan", use_container_width=True):
