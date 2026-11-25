@@ -34,6 +34,8 @@ MAX_HISTORY_MESSAGES = 12        # hanya pesan terakhir yang dikirim ke LLM
 MAX_HISTORY_CHARS = 12_000
 MAX_PROPOSAL_CONTEXT_CHARS = int(os.getenv("MAX_PROPOSAL_CONTEXT_CHARS", "4000"))
 
+MAX_QUESTIONS = 7  # batas pertanyaan per sesi browser (pengaman kuota API)
+
 PROMPT_VERSION = "v3"            # ubah jika prompt di bawah diubah (cache buster)
 
 try:
@@ -92,6 +94,7 @@ DEFAULT_STATE = {
     "analysis_nonce": 0,         # dinaikkan saat user minta analisis ulang
     "proposal_version": 0,       # dinaikkan saat lampiran dihapus (reset uploader)
     "last_failed_prompt": None,
+    "questions_asked": 0,
 }
 for _key, _value in DEFAULT_STATE.items():
     if _key not in st.session_state:
@@ -592,7 +595,7 @@ with st.sidebar:
     st.markdown("---")
     if st.button(
         "🧹 Mulai percakapan baru",
-        help="Hapus riwayat obrolan (lampiran tetap).",
+        help="Hapus riwayat obrolan (lampiran dan kuota pertanyaan tetap).",
         use_container_width=True,
     ):
         st.session_state.chat_history = []
@@ -667,10 +670,25 @@ if st.session_state.last_failed_prompt:
                 st.error(f"Maaf, terjadi kesalahan: {exc}")
 
 # 8.3 Chat input
-prompt = st.chat_input("✍️Tulis pertanyaan Anda tentang kewirausahaan...")
-if prompt:
-    st.session_state.chat_history.append({"role": "user", "content": prompt})
+questions_left = MAX_QUESTIONS - st.session_state.questions_asked
+if questions_left <= 0:
+    st.warning(
+        f"Batas {MAX_QUESTIONS} pertanyaan per sesi sudah tercapai. "
+        "Unduh transkrip dulu bila perlu, lalu muat ulang halaman untuk memulai sesi baru."
+    )
+elif questions_left <= 3:
+    st.caption(
+        f"ℹ️ Sisa {questions_left} dari {MAX_QUESTIONS} pertanyaan untuk sesi ini."
+    )
+
+prompt = st.chat_input(
+    "✍️Tulis pertanyaan Anda tentang kewirausahaan...",
+    disabled=questions_left <= 0,
+)
+if prompt and questions_left > 0:
+    st.session_state.questions_asked += 1
     st.session_state.last_failed_prompt = None
+    st.session_state.chat_history.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -683,6 +701,9 @@ if prompt:
         except Exception as exc:
             st.session_state.last_failed_prompt = prompt
             st.error(f"Maaf, terjadi kesalahan: {exc}")
+
+    if st.session_state.questions_asked >= MAX_QUESTIONS:
+        st.rerun()
 
 # 8.4 Unduh transkrip di akhir percakapan agar isinya selalu terbaru
 if transcript_available():

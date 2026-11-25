@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*.log
+
+# Kredensial lokal
+.streamlit/secrets.toml
