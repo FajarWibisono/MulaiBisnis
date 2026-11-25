@@ -3,7 +3,6 @@
 import hashlib
 import html
 import io
-import json
 import os
 from datetime import datetime
 
@@ -492,28 +491,6 @@ def build_transcript_html() -> str:
 </html>"""
 
 
-def build_transcript_json() -> str:
-    proposal = st.session_state.proposal_file
-    payload = {
-        "exported_at": datetime.now().isoformat(timespec="seconds"),
-        "proposal": (
-            {
-                "name": proposal["name"],
-                "size_bytes": len(proposal["bytes"]),
-                "pages": st.session_state.proposal_pages,
-                "chars": st.session_state.proposal_chars,
-                "analyzed_at": st.session_state.analysis_at,
-                "analysis": st.session_state.proposal_analysis,
-            }
-            if proposal
-            else None
-        ),
-        "chat_history": st.session_state.chat_history,
-        "model": MODEL_CHAT,
-    }
-    return json.dumps(payload, ensure_ascii=False, indent=2)
-
-
 def reset_proposal_state() -> None:
     """Callback: hapus lampiran + analisis dan reset widget uploader."""
     st.session_state.proposal_version += 1
@@ -658,34 +635,14 @@ if st.session_state.proposal_analysis:
 # ─────────────────────────────────────────────────────────────────────────────
 # 8. ANTARMUKA CHAT
 # ─────────────────────────────────────────────────────────────────────────────
-chat_left, chat_right = st.columns([5, 1])
-with chat_left:
-    st.subheader("💬 Diskusi Interaktif dengan **TEMAN DISKUSI Kewirausahaan**")
-    st.markdown(
-        "*Ajukan pertanyaan spesifik tentang ide bisnis, strategi, atau tantangan yang Anda hadapi*"
-    )
-    if st.session_state.proposal_analysis and st.session_state.include_proposal_context:
-        st.caption(
-            "🧠 Konteks aktif: jawaban mentor mempertimbangkan hasil analisis proposal "
-            "yang Anda lampirkan."
-        )
-with chat_right:
-    st.write("")
-    st.download_button(
-        "⬇️ Unduh chat (.html)",
-        data=build_transcript_html(),
-        file_name=f"transkrip_mulaibisnis_{datetime.now():%Y%m%d_%H%M}.html",
-        mime="text/html",
-        use_container_width=True,
-        disabled=not transcript_available(),
-    )
-
-if transcript_available():
-    st.download_button(
-        "⬇️ Unduh data lengkap (.json)",
-        data=build_transcript_json(),
-        file_name=f"data_mulaibisnis_{datetime.now():%Y%m%d_%H%M}.json",
-        mime="application/json",
+st.subheader("💬 Diskusi Interaktif dengan **TEMAN DISKUSI Kewirausahaan**")
+st.markdown(
+    "*Ajukan pertanyaan spesifik tentang ide bisnis, strategi, atau tantangan yang Anda hadapi*"
+)
+if st.session_state.proposal_analysis and st.session_state.include_proposal_context:
+    st.caption(
+        "🧠 Konteks aktif: jawaban mentor mempertimbangkan hasil analisis proposal "
+        "yang Anda lampirkan."
     )
 
 # 8.1 Riwayat chat
@@ -726,6 +683,20 @@ if prompt:
         except Exception as exc:
             st.session_state.last_failed_prompt = prompt
             st.error(f"Maaf, terjadi kesalahan: {exc}")
+
+# 8.4 Unduh transkrip di akhir percakapan agar isinya selalu terbaru
+if transcript_available():
+    st.markdown("")
+    col_spacer, col_download = st.columns([3, 1])
+    with col_download:
+        st.download_button(
+            "⬇️ Unduh chat (.html)",
+            data=build_transcript_html(),
+            file_name=f"transkrip_mulaibisnis_{datetime.now():%Y%m%d_%H%M}.html",
+            mime="text/html",
+            use_container_width=True,
+            help="Menyimpan seluruh percakapan beserta hasil analisis proposal ke file HTML.",
+        )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 9. FOOTER & DISCLAIMER
